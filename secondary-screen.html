@@ -1,0 +1,207 @@
+<!--
+ * @Description: In User Settings Edit
+ * @Author: your name
+ * @Date: 2019-08-08 10:08:52
+ * @LastEditTime: 2019-09-06 14:37:42
+ * @LastEditors: Please set LastEditors
+ -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>副屏</title>
+    <style>
+        html,body { width: 100%; height: 100%;padding:0;margin:0;}
+        .full-screen { overflow: hidden; padding: 0; margin: 0; }
+        .fill-full { width: 100%; height: 100%; padding: 0; margin: 0; }
+        #image { position: absolute; }
+    </style>
+</head>
+<body class="full-screen">
+
+<!--视频提示-->
+<div class="fill-full" id="video">
+    <video class="fill-full" id="video-box" src="file://C:/aio_client/resources/app/index-tip.mp4" autoplay loop width="100%" height="100%">
+    </video>
+</div>
+
+<!--文本提示-->
+<div class="fill-full" id="text">
+    <span class="fill-full" id="text-box"></span>
+</div>
+
+<!--外链提示-->
+<div class="fill-full" id="link">
+    <iframe id="link-box" class="fill-full"></iframe>
+</div>
+<!--图片提示-->
+<div class="fill-full" id="image">
+    <img id="image-box" class="fill-full">
+</div>
+</body>
+<script>
+    var videoMp4 = document.getElementById('video-box');
+    videoMp4.onplay = function () {
+        videoMp4.volume = (localStorage.SecScreenVoice||0.01)*1;
+//        videoMp4.muted=true;
+    };
+
+    function changeVoice(data) {
+        let voiceNum = parseInt(data);
+        videoMp4.volume = voiceNum*0.01;
+        localStorage.SecScreenVoice = videoMp4.volume;
+    }
+
+    var ipcRenderer = require('electron').ipcRenderer;
+    let tipType;
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log('DOMContentLoaded');
+
+        ipcRenderer.on('changeLocalStorage', function (event, type, data) {
+            changeVoice(data);
+        });
+
+        var $video = document.getElementById('video');
+        var $videoBox = document.getElementById('video-box');
+        var $text = document.getElementById('text');
+        var $textBox = document.getElementById('text-box');
+        var $link = document.getElementById('link');
+        var $linkBox = document.getElementById('link-box');
+        var $image = document.getElementById('image');
+        var $imageBox = document.getElementById('image-box');
+
+        /**
+         * 根据类型展示副屏内容
+         * @param type 提示类型，video:动画，link：外链，text：文本
+         * @param data 具体数据，未定结构，video和link暂定传url，text传text
+         */
+         tipType = function showContentByTipType(type, data) {
+            if (type != 'image') {
+                // 如果切换了其他类型的提示，则重置tracker是否初始化的状态
+                trackerInitialized = false;
+            }
+            switch (type) {
+                case 'video':
+                    showVideoContent(data);
+                    break;
+                case 'link':
+                    showLinkContent(data);
+                    break;
+                case 'text':
+                    showTextContent(data);
+                    break;
+                case 'image':
+                    showImageContent(data);
+                    break;
+                default:
+            }
+        }
+        
+
+        ipcRenderer.on('play', function (event, type, data) {
+            console.debug('License on play event');
+            console.debug('event:', event);
+            console.debug('type:', type);
+            //console.debug('data:', data);
+            // showContentByTipType(type, data);
+            tipType(type,data)
+        });
+        /**
+         * 显示动画内容
+         * @param data
+         */
+        function showVideoContent(data) {
+            $video.style.display = 'block';
+            $text.style.display = 'none';
+            $link.style.display = 'none';
+            $image.style.display = 'none';
+
+            var url = data ? data.url : 'file://C:/aio_client/resources/app/index-tip.mp4';
+            $videoBox.setAttribute('src', url);
+        }
+
+        /**
+         * 显示动画内容
+         * @param data
+         */
+        function showImageContent(data) {
+            $video.style.display = 'none';
+            $text.style.display = 'none';
+            $link.style.display = 'none';
+            $image.style.display = 'block';
+
+            var url = data ? data.url : 'file://C:/aio_client/resources/app/demo.jpg';
+            $imageBox.setAttribute('src', url);
+        }
+
+        /**
+         * 显示链接内容
+         * @param data
+         */
+        function showLinkContent(data) {
+            $video.style.display = 'none';
+            $text.style.display = 'none';
+            $link.style.display = 'block';
+            $image.style.display = 'none';
+
+            var url = data ? data.url : 'http://www.baidu.com';
+            $linkBox.setAttribute('src', url);
+        }
+
+        /**
+         * 显示文本内容
+         * @param data
+         */
+        function showTextContent(data) {
+            $video.style.display = 'none';
+            $text.style.display = 'block';
+            $link.style.display = 'none';
+
+            $textBox.innerHTML = data ? data.text : '自助服务终端';
+        }
+
+        //showVideoTip();
+        //showLinkTip();
+        //showTextTip();
+    });
+    
+    var ws = require('/aio_client/node_modules/nodejs-websocket');
+    var port=7000
+    var server = ws.createServer(function(conn){
+    //受到连接触发//
+    console.log('new connection');
+    conn.on("text",function(str){
+        // 收到信息触发     接收 //
+        console.log("接收到"+str)
+        str = JSON.parse(str)
+        if(str.type == 1){
+            tipType('video',str)
+        }else if(str.type == 2){
+            tipType('image',str)
+        }else if(str.type == 3){
+            tipType('link',str)
+        }else if(str.type == 4){
+            tipType('text',str)
+        }
+        boardcast(JSON.stringify(str)) // 广播消息 //
+        conn.sendText(JSON.stringify(str)) // 发送 数据 //
+    })
+    conn.on("close",function(code,reason){
+        // 断开连接触发 //
+        console.log("connection closed")
+    })
+    conn.on("error",function(err){
+        // 出错触发 //
+        console.log("header err")
+        console.log(err)
+    })
+    function boardcast(str){  // 广播 //
+    // server.connections  保存每个连接进来的用户 //
+         server.connections.forEach(function(conn){   //  .forEach 是调用数组里每个元素  //
+            conn.sendText(str)
+        })
+    }
+}).listen(port)
+console.log("websocket server listen port is" + port)
+</script>
+</html>

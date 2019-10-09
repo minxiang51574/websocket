@@ -1,0 +1,34 @@
+<!--
+ * @Description: 互动屏 SDK
+ * @Author: MX
+ * @Date: 2019-09-05 10:36:11
+ * @LastEditTime: 2019-09-06 11:59:05
+ * @LastEditors: Please set LastEditors
+ -->
+<html>
+<head>
+    <title>SDK</title>
+    <script src="./SecondaryScreenUtil.js"></script>
+</head>
+<body>
+    <button id="buttun1">播放视频</button>
+    <button id="buttun2">展示图片</button>
+    <button id="buttun3">展示指定页面</button>
+    <button id="buttun4">显示文本</button>
+</body>
+<script>
+    document.querySelector("#buttun1").onclick = function () {
+        SecondaryScreenUtil.showVideo("file://C:/aio_client/resources/app/index-tip2.mp4")
+    }
+    document.querySelector("#buttun2").onclick = function () {
+        SecondaryScreenUtil.showImage("file://C:/aio_client/resources/app/demo2.jpg")
+    }
+    document.querySelector("#buttun3").onclick = function () {
+        SecondaryScreenUtil.showLink("http://www.hao123.com")
+    }
+    document.querySelector("#buttun4").onclick = function () {
+        SecondaryScreenUtil.showText("这是一个测试")
+    }
+</script>
+
+</html>
